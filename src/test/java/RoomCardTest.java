@@ -7,15 +7,15 @@ import dml.gamecurrency.repository.GameUserCurrencyAccountsRepository;
 import dml.gamecurrency.service.GameCurrencyAccountingService;
 import dml.gamecurrency.service.repositoryset.GameCurrencyAccountingServiceRepositorySet;
 import dml.id.entity.LongIdGenerator;
-import dml.keepalive.repository.AliveKeeperRepository;
-import dml.largescaletaskmanagement.repository.LargeScaleTaskRepository;
-import dml.largescaletaskmanagement.repository.LargeScaleTaskSegmentRepository;
 import dml.qipairoom.entity.RandomNoZeroIntegerStringRoomNoGenerator;
 import dml.qipairoom.repository.PlayerRoomJoinRepository;
 import dml.qipairoom.repository.QipaiRoomRepository;
 import dml.qipairoom.repository.RoomNoGeneratorRepository;
 import dml.qipairoomcard.entity.ClearRoomTask;
+import dml.qipairoomcard.repository.ClearRoomTaskRepository;
 import dml.qipairoomcard.repository.ClearRoomTaskSegmentIDGeneratorRepository;
+import dml.qipairoomcard.repository.ClearRoomTaskSegmentRepository;
+import dml.qipairoomcard.repository.RoomAliveKeeperRepository;
 import dml.qipairoomcard.service.RoomCardService;
 import dml.qipairoomcard.service.repositoryset.RoomCardServiceRepositorySet;
 import dml.qipairoomcard.service.result.RoomCardCreateRoomResult;
@@ -134,9 +134,9 @@ public class RoomCardTest {
     RoomNoGeneratorRepository roomNoGeneratorRepository = TestCommonSingletonRepository.instance(RoomNoGeneratorRepository.class,
             new RandomNoZeroIntegerStringRoomNoGenerator(6));
     PlayerRoomJoinRepository playerRoomJoinRepository = TestCommonRepository.instance(PlayerRoomJoinRepository.class);
-    LargeScaleTaskRepository largeScaleTaskRepository = TestCommonRepository.instance(LargeScaleTaskRepository.class);
-    LargeScaleTaskSegmentRepository largeScaleTaskSegmentRepository = TestCommonRepository.instance(LargeScaleTaskSegmentRepository.class);
-    AliveKeeperRepository aliveKeeperRepository = TestCommonRepository.instance(AliveKeeperRepository.class);
+    ClearRoomTaskRepository clearRoomTaskRepository = TestCommonRepository.instance(ClearRoomTaskRepository.class);
+    ClearRoomTaskSegmentRepository clearRoomTaskSegmentRepository = TestCommonRepository.instance(ClearRoomTaskSegmentRepository.class);
+    RoomAliveKeeperRepository roomAliveKeeperRepository = TestCommonRepository.instance(RoomAliveKeeperRepository.class);
     ClearRoomTaskSegmentIDGeneratorRepository clearRoomTaskSegmentIDGeneratorRepository =
             TestCommonSingletonRepository.instance(ClearRoomTaskSegmentIDGeneratorRepository.class, new LongIdGenerator(1));
 
@@ -167,18 +167,18 @@ public class RoomCardTest {
     RoomCardServiceRepositorySet roomCardServiceRepositorySet = new RoomCardServiceRepositorySet() {
 
         @Override
-        public LargeScaleTaskRepository getLargeScaleTaskRepository() {
-            return largeScaleTaskRepository;
+        public RoomAliveKeeperRepository getRoomAliveKeeperRepository() {
+            return roomAliveKeeperRepository;
         }
 
         @Override
-        public LargeScaleTaskSegmentRepository getLargeScaleTaskSegmentRepository() {
-            return largeScaleTaskSegmentRepository;
+        public ClearRoomTaskRepository getClearRoomTaskRepository() {
+            return clearRoomTaskRepository;
         }
 
         @Override
-        public AliveKeeperRepository getAliveKeeperRepository() {
-            return aliveKeeperRepository;
+        public ClearRoomTaskSegmentRepository getClearRoomTaskSegmentRepository() {
+            return clearRoomTaskSegmentRepository;
         }
 
         @Override

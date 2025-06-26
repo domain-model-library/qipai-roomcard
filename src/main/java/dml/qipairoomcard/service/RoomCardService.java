@@ -1,8 +1,13 @@
 package dml.qipairoomcard.service;
 
 import dml.gamecurrency.service.GameCurrencyAccountingService;
+import dml.keepalive.repository.AliveKeeperRepository;
 import dml.keepalive.service.KeepAliveService;
+import dml.keepalive.service.repositoryset.AliveKeeperServiceRepositorySet;
+import dml.largescaletaskmanagement.repository.LargeScaleTaskRepository;
+import dml.largescaletaskmanagement.repository.LargeScaleTaskSegmentRepository;
 import dml.largescaletaskmanagement.service.LargeScaleTaskService;
+import dml.largescaletaskmanagement.service.repositoryset.LargeScaleTaskServiceRepositorySet;
 import dml.largescaletaskmanagement.service.result.TakeTaskSegmentToExecuteResult;
 import dml.qipairoom.entity.QipaiRoom;
 import dml.qipairoom.service.RoomService;
@@ -43,11 +48,21 @@ public class RoomCardService {
             throw new RuntimeException("create room failed, user already in another room or other error");
         }
 
-        KeepAliveService.createAliveKeeper(repositorySet, createRoomResult.getRoomNo(), currentTime, new RoomAliveKeeper());
+        KeepAliveService.createAliveKeeper(getAliveKeeperServiceRepositorySet(repositorySet), createRoomResult.getRoomNo(), currentTime, new RoomAliveKeeper());
 
         result.setRoomNo(createRoomResult.getRoomNo());
         result.setSuccess(true);
         return result;
+    }
+
+    private static AliveKeeperServiceRepositorySet getAliveKeeperServiceRepositorySet(RoomCardServiceRepositorySet repositorySet) {
+        return new AliveKeeperServiceRepositorySet() {
+
+            @Override
+            public AliveKeeperRepository getAliveKeeperRepository() {
+                return repositorySet.getRoomAliveKeeperRepository();
+            }
+        };
     }
 
     public static RoomCardJoinRoomResult joinRoom(RoomCardServiceRepositorySet repositorySet,
@@ -68,14 +83,14 @@ public class RoomCardService {
 
     public static void dismissRoom(RoomCardServiceRepositorySet repositorySet, String roomNo) {
         RoomService.dismissRoom(repositorySet, roomNo);
-        KeepAliveService.removeAliveKeeper(repositorySet, roomNo);
+        KeepAliveService.removeAliveKeeper(getAliveKeeperServiceRepositorySet(repositorySet), roomNo);
     }
 
     public static ClearRoomTask createClearRoomTask(RoomCardServiceRepositorySet repositorySet,
                                                     String taskName, List<String> roomNoList, long currentTime) {
         ClearRoomTaskSegmentIDGeneratorRepository clearRoomTaskSegmentIDGeneratorRepository = repositorySet.getClearRoomTaskSegmentIDGeneratorRepository();
 
-        ClearRoomTask task = (ClearRoomTask) LargeScaleTaskService.createTask(repositorySet,
+        ClearRoomTask task = (ClearRoomTask) LargeScaleTaskService.createTask(getLargeScaleTaskServiceRepositorySet(repositorySet),
                 taskName, new ClearRoomTask(), currentTime);
 
         if (task != null) {
@@ -86,22 +101,38 @@ public class RoomCardService {
                 ClearRoomTaskSegment segment = new ClearRoomTaskSegment();
                 segment.setRoomNo(roomNo);
                 segment.setId(clearRoomTaskSegmentIDGeneratorRepository.take().generateId());
-                LargeScaleTaskService.addTaskSegment(repositorySet,
+                LargeScaleTaskService.addTaskSegment(getLargeScaleTaskServiceRepositorySet(repositorySet),
                         taskName, segment);
             }
-            LargeScaleTaskService.setTaskReadyToProcess(repositorySet,
+            LargeScaleTaskService.setTaskReadyToProcess(getLargeScaleTaskServiceRepositorySet(repositorySet),
                     taskName);
         }
         return task;
     }
 
+    private static LargeScaleTaskServiceRepositorySet getLargeScaleTaskServiceRepositorySet(RoomCardServiceRepositorySet repositorySet) {
+        return new LargeScaleTaskServiceRepositorySet() {
+
+            @Override
+            public LargeScaleTaskRepository getLargeScaleTaskRepository() {
+                return repositorySet.getClearRoomTaskRepository();
+            }
+
+            @Override
+            public LargeScaleTaskSegmentRepository getLargeScaleTaskSegmentRepository() {
+                return repositorySet.getClearRoomTaskSegmentRepository();
+            }
+        };
+    }
+
     public static boolean executeClearRoomTask(RoomCardServiceRepositorySet repositorySet,
                                                String taskName, long currentTime, long maxSegmentExecutionTime, long maxTimeToTaskReady,
                                                long roomAliveTimeout) {
-        TakeTaskSegmentToExecuteResult takeSegmentResult = LargeScaleTaskService.takeTaskSegmentToExecute(repositorySet,
+        TakeTaskSegmentToExecuteResult takeSegmentResult = LargeScaleTaskService.takeTaskSegmentToExecute(
+                getLargeScaleTaskServiceRepositorySet(repositorySet),
                 taskName, currentTime, maxSegmentExecutionTime, maxTimeToTaskReady);
         if (takeSegmentResult.isTaskCompleted()) {
-            LargeScaleTaskService.removeTask(repositorySet, taskName);
+            LargeScaleTaskService.removeTask(getLargeScaleTaskServiceRepositorySet(repositorySet), taskName);
             return false;
         }
         ClearRoomTaskSegment segment = (ClearRoomTaskSegment) takeSegmentResult.getTaskSegment();
@@ -109,11 +140,12 @@ public class RoomCardService {
             return false;
         }
         String roomNo = segment.getRoomNo();
-        boolean roomAlive = KeepAliveService.isAlive(repositorySet, roomNo, currentTime, roomAliveTimeout);
+        boolean roomAlive = KeepAliveService.isAlive(getAliveKeeperServiceRepositorySet(repositorySet),
+                roomNo, currentTime, roomAliveTimeout);
         if (!roomAlive) {
             RoomService.dismissRoom(repositorySet, roomNo);
         }
-        LargeScaleTaskService.completeTaskSegment(repositorySet, segment.getId());
+        LargeScaleTaskService.completeTaskSegment(getLargeScaleTaskServiceRepositorySet(repositorySet), segment.getId());
         return true;
     }
 
