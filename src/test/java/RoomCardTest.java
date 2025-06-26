@@ -1,16 +1,28 @@
+import dml.common.repository.TestCommonRepository;
+import dml.common.repository.TestCommonSingletonRepository;
 import dml.gamecurrency.repository.GameCurrencyAccountBillItemRepository;
 import dml.gamecurrency.repository.GameCurrencyAccountIdGeneratorRepository;
 import dml.gamecurrency.repository.GameCurrencyAccountRepository;
 import dml.gamecurrency.repository.GameUserCurrencyAccountsRepository;
 import dml.gamecurrency.service.GameCurrencyAccountingService;
 import dml.gamecurrency.service.repositoryset.GameCurrencyAccountingServiceRepositorySet;
+import dml.id.entity.LongIdGenerator;
+import dml.keepalive.repository.AliveKeeperRepository;
+import dml.largescaletaskmanagement.repository.LargeScaleTaskRepository;
+import dml.largescaletaskmanagement.repository.LargeScaleTaskSegmentRepository;
+import dml.qipairoom.entity.RandomNoZeroIntegerStringRoomNoGenerator;
 import dml.qipairoom.repository.PlayerRoomJoinRepository;
 import dml.qipairoom.repository.QipaiRoomRepository;
 import dml.qipairoom.repository.RoomNoGeneratorRepository;
+import dml.qipairoomcard.entity.ClearRoomTask;
+import dml.qipairoomcard.repository.ClearRoomTaskSegmentIDGeneratorRepository;
 import dml.qipairoomcard.service.RoomCardService;
 import dml.qipairoomcard.service.repositoryset.RoomCardServiceRepositorySet;
 import dml.qipairoomcard.service.result.RoomCardCreateRoomResult;
+import dml.qipairoomcard.service.result.RoomCardJoinRoomResult;
 import org.junit.Test;
+
+import java.util.List;
 
 public class RoomCardTest {
 
@@ -21,6 +33,8 @@ public class RoomCardTest {
         Long playerId2 = 2L;
         Long playerId3 = 3L;
         Long playerId4 = 4L;
+        long roomOverTime = 60 * 60 * 1000; // 房间超时时间1小时
+        long currentTime = 0L;
 
         // 给玩家1添加房卡
         GameCurrencyAccountingService.deposit(gameCurrencyAccountingServiceRepositorySet,
@@ -28,30 +42,104 @@ public class RoomCardTest {
                 new TestRoomCardAccountBillItem(gameCurrencyAccountBillItemIdGenerator++));
 
 
-        // 玩家1创建房间并消耗房卡
+        // 玩家1创建房间
         RoomCardCreateRoomResult createRoomResult1 = RoomCardService.createRoom(roomCardServiceRepositorySet,
-                playerId1, roomCardToConsume, "roomCard",
-                new TestRoomCardAccountBillItem(gameCurrencyAccountBillItemIdGenerator++),
-                4, new TestQipaiRoom());
+                playerId1, roomCardToConsume, "roomCard", 4, new TestQipaiRoom(), currentTime);
+        assert createRoomResult1.isSuccess();
 
         // 玩家2加入房间
+        RoomCardJoinRoomResult joinRoomResult1 = RoomCardService.joinRoom(roomCardServiceRepositorySet,
+                createRoomResult1.getRoomNo(), playerId2);
+        assert joinRoomResult1.isSuccess();
         // 玩家3加入房间
+        RoomCardJoinRoomResult joinRoomResult2 = RoomCardService.joinRoom(roomCardServiceRepositorySet,
+                createRoomResult1.getRoomNo(), playerId3);
+        assert joinRoomResult2.isSuccess();
         // 玩家4加入房间
+        RoomCardJoinRoomResult joinRoomResult3 = RoomCardService.joinRoom(roomCardServiceRepositorySet,
+                createRoomResult1.getRoomNo(), playerId4);
+        assert joinRoomResult3.isSuccess();
+
+        //4个玩家都准备好了
+        RoomCardService.playerReady(roomCardServiceRepositorySet,
+                createRoomResult1.getRoomNo(), playerId1);
+        RoomCardService.playerReady(roomCardServiceRepositorySet,
+                createRoomResult1.getRoomNo(), playerId2);
+        RoomCardService.playerReady(roomCardServiceRepositorySet,
+                createRoomResult1.getRoomNo(), playerId3);
+        RoomCardService.playerReady(roomCardServiceRepositorySet,
+                createRoomResult1.getRoomNo(), playerId4);
+
+        //分配到了战斗服，扣除房卡
+        GameCurrencyAccountingService.withdrawIfBalanceSufficient(gameCurrencyAccountingServiceRepositorySet,
+                playerId1, "roomCard", String.valueOf(roomCardToConsume),
+                new TestRoomCardAccountBillItem(gameCurrencyAccountBillItemIdGenerator++));
 
         // 游戏结束，房间解散
+        RoomCardService.dismissRoom(roomCardServiceRepositorySet,
+                createRoomResult1.getRoomNo());
 
         // 玩家1创建房间
+        RoomCardCreateRoomResult createRoomResult2 = RoomCardService.createRoom(roomCardServiceRepositorySet,
+                playerId1, roomCardToConsume, "roomCard", 4, new TestQipaiRoom(), currentTime);
+
         // 时间流逝半小时
+        currentTime += 30 * 60 * 1000; // 半小时
+
         // 定时任务清理失效房间
+        long maxSegmentExecutionTime = 1000;
+        long maxTimeToTaskReady = 1000;
+        ClearRoomTask clearRoomTask1 = RoomCardService.createClearRoomTask(roomCardServiceRepositorySet,
+                "clear_room", List.of(createRoomResult2.getRoomNo()), currentTime);
+        boolean executeSuccess1 = RoomCardService.executeClearRoomTask(roomCardServiceRepositorySet,
+                clearRoomTask1.getName(), currentTime, maxSegmentExecutionTime, maxTimeToTaskReady, roomOverTime);
+        assert executeSuccess1;
+        boolean executeSuccess2 = RoomCardService.executeClearRoomTask(roomCardServiceRepositorySet,
+                clearRoomTask1.getName(), currentTime, maxSegmentExecutionTime, maxTimeToTaskReady, roomOverTime);
+        assert !executeSuccess2;
+
         // 玩家1再次创建房间失败
+        RoomCardCreateRoomResult createRoomResult3 = RoomCardService.createRoom(roomCardServiceRepositorySet,
+                playerId1, roomCardToConsume, "roomCard", 4, new TestQipaiRoom(), currentTime);
+        assert !createRoomResult3.isSuccess();
+
         // 时间流逝半小时
+        currentTime += 30 * 60 * 1000; // 半小时
+
         // 定时任务清理失效房间，玩家1原房间已失效
+        ClearRoomTask clearRoomTask2 = RoomCardService.createClearRoomTask(roomCardServiceRepositorySet,
+                "clear_room", List.of(createRoomResult2.getRoomNo()), currentTime);
+        boolean executeSuccess3 = RoomCardService.executeClearRoomTask(roomCardServiceRepositorySet,
+                clearRoomTask2.getName(), currentTime, maxSegmentExecutionTime, maxTimeToTaskReady, roomOverTime);
+        assert executeSuccess3;
+
         // 玩家1再次创建房间成功
+        RoomCardCreateRoomResult createRoomResult4 = RoomCardService.createRoom(roomCardServiceRepositorySet,
+                playerId1, roomCardToConsume, "roomCard", 4, new TestQipaiRoom(), currentTime);
+        assert createRoomResult4.isSuccess();
+
+        // 玩家1直接解散房间
+        RoomCardService.dismissRoomByOwner(roomCardServiceRepositorySet, playerId1);
 
 
     }
 
     long gameCurrencyAccountBillItemIdGenerator = 1L;
+    GameCurrencyAccountRepository gameCurrencyAccountRepository = TestCommonRepository.instance(GameCurrencyAccountRepository.class);
+    GameCurrencyAccountIdGeneratorRepository gameCurrencyAccountIdGeneratorRepository =
+            TestCommonSingletonRepository.instance(GameCurrencyAccountIdGeneratorRepository.class, new LongIdGenerator(1));
+    GameUserCurrencyAccountsRepository gameUserCurrencyAccountsRepository = TestCommonRepository.instance(GameUserCurrencyAccountsRepository.class);
+    GameCurrencyAccountBillItemRepository gameCurrencyAccountBillItemRepository = TestCommonRepository.instance(GameCurrencyAccountBillItemRepository.class);
+    QipaiRoomRepository qipaiRoomRepository = TestCommonRepository.instance(QipaiRoomRepository.class);
+    RoomNoGeneratorRepository roomNoGeneratorRepository = TestCommonSingletonRepository.instance(RoomNoGeneratorRepository.class,
+            new RandomNoZeroIntegerStringRoomNoGenerator(6));
+    PlayerRoomJoinRepository playerRoomJoinRepository = TestCommonRepository.instance(PlayerRoomJoinRepository.class);
+    LargeScaleTaskRepository largeScaleTaskRepository = TestCommonRepository.instance(LargeScaleTaskRepository.class);
+    LargeScaleTaskSegmentRepository largeScaleTaskSegmentRepository = TestCommonRepository.instance(LargeScaleTaskSegmentRepository.class);
+    AliveKeeperRepository aliveKeeperRepository = TestCommonRepository.instance(AliveKeeperRepository.class);
+    ClearRoomTaskSegmentIDGeneratorRepository clearRoomTaskSegmentIDGeneratorRepository =
+            TestCommonSingletonRepository.instance(ClearRoomTaskSegmentIDGeneratorRepository.class, new LongIdGenerator(1));
+
 
     GameCurrencyAccountingServiceRepositorySet gameCurrencyAccountingServiceRepositorySet = new GameCurrencyAccountingServiceRepositorySet() {
         @Override
@@ -79,38 +167,58 @@ public class RoomCardTest {
     RoomCardServiceRepositorySet roomCardServiceRepositorySet = new RoomCardServiceRepositorySet() {
 
         @Override
+        public LargeScaleTaskRepository getLargeScaleTaskRepository() {
+            return largeScaleTaskRepository;
+        }
+
+        @Override
+        public LargeScaleTaskSegmentRepository getLargeScaleTaskSegmentRepository() {
+            return largeScaleTaskSegmentRepository;
+        }
+
+        @Override
+        public AliveKeeperRepository getAliveKeeperRepository() {
+            return aliveKeeperRepository;
+        }
+
+        @Override
+        public ClearRoomTaskSegmentIDGeneratorRepository getClearRoomTaskSegmentIDGeneratorRepository() {
+            return clearRoomTaskSegmentIDGeneratorRepository;
+        }
+
+        @Override
         public QipaiRoomRepository getQipaiRoomRepository() {
-            return null;
+            return qipaiRoomRepository;
         }
 
         @Override
         public RoomNoGeneratorRepository getRoomNoGeneratorRepository() {
-            return null;
+            return roomNoGeneratorRepository;
         }
 
         @Override
         public PlayerRoomJoinRepository getPlayerRoomJoinRepository() {
-            return null;
+            return playerRoomJoinRepository;
         }
 
         @Override
         public GameCurrencyAccountRepository getGameCurrencyAccountRepository() {
-            return null;
+            return gameCurrencyAccountRepository;
         }
 
         @Override
         public GameCurrencyAccountIdGeneratorRepository getGameCurrencyAccountIdGeneratorRepository() {
-            return null;
+            return gameCurrencyAccountIdGeneratorRepository;
         }
 
         @Override
         public GameUserCurrencyAccountsRepository getGameUserCurrencyAccountsRepository() {
-            return null;
+            return gameUserCurrencyAccountsRepository;
         }
 
         @Override
         public GameCurrencyAccountBillItemRepository getGameCurrencyAccountBillItemRepository() {
-            return null;
+            return gameCurrencyAccountBillItemRepository;
         }
     };
 }

@@ -2,6 +2,7 @@ package dml.qipairoomcard.service.result;
 
 public class RoomCardCreateRoomResult {
     private boolean success;
+    private String roomNo;
     private boolean insufficientRoomCard;
     private boolean alreadyInRoom;
 
@@ -11,6 +12,14 @@ public class RoomCardCreateRoomResult {
 
     public void setSuccess(boolean success) {
         this.success = success;
+    }
+
+    public String getRoomNo() {
+        return roomNo;
+    }
+
+    public void setRoomNo(String roomNo) {
+        this.roomNo = roomNo;
     }
 
     public boolean isInsufficientRoomCard() {

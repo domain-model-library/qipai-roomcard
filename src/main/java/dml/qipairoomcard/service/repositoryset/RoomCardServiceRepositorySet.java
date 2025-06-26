@@ -1,8 +1,12 @@
 package dml.qipairoomcard.service.repositoryset;
 
 import dml.gamecurrency.service.repositoryset.GameCurrencyAccountingServiceRepositorySet;
+import dml.keepalive.service.repositoryset.AliveKeeperServiceRepositorySet;
+import dml.largescaletaskmanagement.service.repositoryset.LargeScaleTaskServiceRepositorySet;
 import dml.qipairoom.service.repositoryset.RoomServiceRepositorySet;
+import dml.qipairoomcard.repository.ClearRoomTaskSegmentIDGeneratorRepository;
 
 public interface RoomCardServiceRepositorySet extends GameCurrencyAccountingServiceRepositorySet,
-        RoomServiceRepositorySet {
+        RoomServiceRepositorySet, AliveKeeperServiceRepositorySet, LargeScaleTaskServiceRepositorySet {
+    ClearRoomTaskSegmentIDGeneratorRepository getClearRoomTaskSegmentIDGeneratorRepository();
 }
