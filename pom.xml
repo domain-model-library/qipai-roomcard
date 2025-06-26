@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>domain-model-library</groupId>
-    <artifactId>game-roomcard.dml</artifactId>
+    <artifactId>qipai-roomcard.dml</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <properties>
