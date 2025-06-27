@@ -5,6 +5,7 @@ public class RoomCardJoinRoomResult {
     private boolean alreadyInRoom;
     private boolean inAnotherRoom;
     private boolean roomFull;
+    private boolean roomStarted;
 
     public boolean isSuccess() {
         return success;
@@ -38,4 +39,11 @@ public class RoomCardJoinRoomResult {
         this.roomFull = roomFull;
     }
 
+    public boolean isRoomStarted() {
+        return roomStarted;
+    }
+
+    public void setRoomStarted(boolean roomStarted) {
+        this.roomStarted = roomStarted;
+    }
 }

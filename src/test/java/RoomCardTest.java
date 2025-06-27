@@ -7,19 +7,18 @@ import dml.gamecurrency.repository.GameUserCurrencyAccountsRepository;
 import dml.gamecurrency.service.GameCurrencyAccountingService;
 import dml.gamecurrency.service.repositoryset.GameCurrencyAccountingServiceRepositorySet;
 import dml.id.entity.LongIdGenerator;
+import dml.qipairoom.entity.QipaiRoom;
 import dml.qipairoom.entity.RandomNoZeroIntegerStringRoomNoGenerator;
 import dml.qipairoom.repository.PlayerRoomJoinRepository;
 import dml.qipairoom.repository.QipaiRoomRepository;
 import dml.qipairoom.repository.RoomNoGeneratorRepository;
 import dml.qipairoomcard.entity.ClearRoomTask;
-import dml.qipairoomcard.repository.ClearRoomTaskRepository;
-import dml.qipairoomcard.repository.ClearRoomTaskSegmentIDGeneratorRepository;
-import dml.qipairoomcard.repository.ClearRoomTaskSegmentRepository;
-import dml.qipairoomcard.repository.RoomAliveKeeperRepository;
+import dml.qipairoomcard.repository.*;
 import dml.qipairoomcard.service.RoomCardService;
 import dml.qipairoomcard.service.repositoryset.RoomCardServiceRepositorySet;
 import dml.qipairoomcard.service.result.RoomCardCreateRoomResult;
 import dml.qipairoomcard.service.result.RoomCardJoinRoomResult;
+import dml.qipairoomcard.service.result.RoomStartedResult;
 import org.junit.Test;
 
 import java.util.List;
@@ -62,17 +61,21 @@ public class RoomCardTest {
 
         //4个玩家都准备好了
         RoomCardService.playerReady(roomCardServiceRepositorySet,
-                createRoomResult1.getRoomNo(), playerId1);
+                createRoomResult1.getRoomNo(), playerId1, "startRoomTask");
         RoomCardService.playerReady(roomCardServiceRepositorySet,
-                createRoomResult1.getRoomNo(), playerId2);
+                createRoomResult1.getRoomNo(), playerId2, "startRoomTask");
         RoomCardService.playerReady(roomCardServiceRepositorySet,
-                createRoomResult1.getRoomNo(), playerId3);
+                createRoomResult1.getRoomNo(), playerId3, "startRoomTask");
         RoomCardService.playerReady(roomCardServiceRepositorySet,
-                createRoomResult1.getRoomNo(), playerId4);
+                createRoomResult1.getRoomNo(), playerId4, "startRoomTask");
 
-        //分配到了战斗服，扣除房卡
-        GameCurrencyAccountingService.withdrawIfBalanceSufficient(gameCurrencyAccountingServiceRepositorySet,
-                playerId1, "roomCard", String.valueOf(roomCardToConsume),
+        // 定时任务来把准备好的房间状态改为“启动中”，开始分配战斗服
+        QipaiRoom room1 = RoomCardService.startRoom(roomCardServiceRepositorySet,
+                "startRoomTask", currentTime);
+
+        // 分配成功后设房间为“游戏中”
+        RoomStartedResult roomStartedResult1 = RoomCardService.roomStarted(roomCardServiceRepositorySet,
+                room1.getNo(), "roomCard", 1,
                 new TestRoomCardAccountBillItem(gameCurrencyAccountBillItemIdGenerator++));
 
         // 游戏结束，房间解散
@@ -139,6 +142,11 @@ public class RoomCardTest {
     RoomAliveKeeperRepository roomAliveKeeperRepository = TestCommonRepository.instance(RoomAliveKeeperRepository.class);
     ClearRoomTaskSegmentIDGeneratorRepository clearRoomTaskSegmentIDGeneratorRepository =
             TestCommonSingletonRepository.instance(ClearRoomTaskSegmentIDGeneratorRepository.class, new LongIdGenerator(1));
+    StartRoomTaskRepository startRoomTaskRepository = TestCommonRepository.instance(StartRoomTaskRepository.class);
+    StartRoomTaskSegmentRepository startRoomTaskSegmentRepository = TestCommonRepository.instance(StartRoomTaskSegmentRepository.class);
+    StartRoomTaskSegmentIDGeneratorRepository startRoomTaskSegmentIDGeneratorRepository =
+            TestCommonSingletonRepository.instance(StartRoomTaskSegmentIDGeneratorRepository.class, new LongIdGenerator(1));
+    RoomStateRepository roomStateRepository = TestCommonRepository.instance(RoomStateRepository.class);
 
 
     GameCurrencyAccountingServiceRepositorySet gameCurrencyAccountingServiceRepositorySet = new GameCurrencyAccountingServiceRepositorySet() {
@@ -184,6 +192,26 @@ public class RoomCardTest {
         @Override
         public ClearRoomTaskSegmentIDGeneratorRepository getClearRoomTaskSegmentIDGeneratorRepository() {
             return clearRoomTaskSegmentIDGeneratorRepository;
+        }
+
+        @Override
+        public StartRoomTaskRepository getStartRoomTaskRepository() {
+            return startRoomTaskRepository;
+        }
+
+        @Override
+        public StartRoomTaskSegmentRepository getStartRoomTaskSegmentRepository() {
+            return startRoomTaskSegmentRepository;
+        }
+
+        @Override
+        public StartRoomTaskSegmentIDGeneratorRepository getStartRoomTaskSegmentIDGeneratorRepository() {
+            return startRoomTaskSegmentIDGeneratorRepository;
+        }
+
+        @Override
+        public RoomStateRepository getRoomStateRepository() {
+            return roomStateRepository;
         }
 
         @Override
