@@ -152,4 +152,8 @@ public class RoomCardService {
     public static void dismissRoomByOwner(RoomCardServiceRepositorySet repositorySet, Object ownerPlayerId) {
         RoomService.dismissRoomByOwner(repositorySet, ownerPlayerId.toString());
     }
+
+    public static QipaiRoom findRoomForPlayer(RoomCardServiceRepositorySet repositorySet, Object userId) {
+        return RoomService.findRoomForPlayer(repositorySet, userId.toString());
+    }
 }
