@@ -140,27 +140,25 @@ public class RoomCardService {
     }
 
     public static ClearRoomTask createClearRoomTask(RoomCardServiceRepositorySet repositorySet,
-                                                    String taskName, List<String> roomNoList, long currentTime) {
-        ClearRoomTaskSegmentIDGeneratorRepository clearRoomTaskSegmentIDGeneratorRepository = repositorySet.getClearRoomTaskSegmentIDGeneratorRepository();
-
+                                                    String taskName, long currentTime) {
         ClearRoomTask task = (ClearRoomTask) LargeScaleTaskService.createTask(getClearRoomTaskServiceRepositorySet(repositorySet),
                 taskName, new ClearRoomTask(), currentTime);
-
-        if (task != null) {
-            if (roomNoList.isEmpty()) {
-                return task;
-            }
-            for (String roomNo : roomNoList) {
-                ClearRoomTaskSegment segment = new ClearRoomTaskSegment();
-                segment.setRoomNo(roomNo);
-                segment.setId(clearRoomTaskSegmentIDGeneratorRepository.take().generateId());
-                LargeScaleTaskService.addTaskSegment(getClearRoomTaskServiceRepositorySet(repositorySet),
-                        taskName, segment);
-            }
-            LargeScaleTaskService.setTaskReadyToProcess(getClearRoomTaskServiceRepositorySet(repositorySet),
-                    taskName);
-        }
         return task;
+    }
+
+    public static void addAllRoomNoToClearRoomTask(RoomCardServiceRepositorySet repositorySet,
+                                                   String taskName, List<String> roomNoList) {
+        ClearRoomTaskSegmentIDGeneratorRepository clearRoomTaskSegmentIDGeneratorRepository = repositorySet.getClearRoomTaskSegmentIDGeneratorRepository();
+
+        for (String roomNo : roomNoList) {
+            ClearRoomTaskSegment segment = new ClearRoomTaskSegment();
+            segment.setRoomNo(roomNo);
+            segment.setId(clearRoomTaskSegmentIDGeneratorRepository.take().generateId());
+            LargeScaleTaskService.addTaskSegment(getClearRoomTaskServiceRepositorySet(repositorySet),
+                    taskName, segment);
+        }
+        LargeScaleTaskService.setTaskReadyToProcess(getClearRoomTaskServiceRepositorySet(repositorySet),
+                taskName);
     }
 
     private static LargeScaleTaskServiceRepositorySet getClearRoomTaskServiceRepositorySet(RoomCardServiceRepositorySet repositorySet) {
@@ -269,4 +267,6 @@ public class RoomCardService {
         result.setSuccess(true);
         return result;
     }
+
+
 }

@@ -93,7 +93,9 @@ public class RoomCardTest {
         long maxSegmentExecutionTime = 1000;
         long maxTimeToTaskReady = 1000;
         ClearRoomTask clearRoomTask1 = RoomCardService.createClearRoomTask(roomCardServiceRepositorySet,
-                "clear_room", List.of(createRoomResult2.getRoomNo()), currentTime);
+                "clear_room", currentTime);
+        RoomCardService.addAllRoomNoToClearRoomTask(roomCardServiceRepositorySet,
+                clearRoomTask1.getName(), List.of(createRoomResult2.getRoomNo()));
         boolean executeSuccess1 = RoomCardService.executeClearRoomTask(roomCardServiceRepositorySet,
                 clearRoomTask1.getName(), currentTime, maxSegmentExecutionTime, maxTimeToTaskReady, roomOverTime);
         assert executeSuccess1;
@@ -111,7 +113,9 @@ public class RoomCardTest {
 
         // 定时任务清理失效房间，玩家1原房间已失效
         ClearRoomTask clearRoomTask2 = RoomCardService.createClearRoomTask(roomCardServiceRepositorySet,
-                "clear_room", List.of(createRoomResult2.getRoomNo()), currentTime);
+                "clear_room", currentTime);
+        RoomCardService.addAllRoomNoToClearRoomTask(roomCardServiceRepositorySet,
+                clearRoomTask2.getName(), List.of(createRoomResult2.getRoomNo()));
         boolean executeSuccess3 = RoomCardService.executeClearRoomTask(roomCardServiceRepositorySet,
                 clearRoomTask2.getName(), currentTime, maxSegmentExecutionTime, maxTimeToTaskReady, roomOverTime);
         assert executeSuccess3;
