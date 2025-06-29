@@ -194,7 +194,7 @@ public class RoomCardService {
         boolean roomAlive = KeepAliveService.isAlive(getAliveKeeperServiceRepositorySet(repositorySet),
                 roomNo, currentTime, roomAliveTimeout);
         if (!roomAlive) {
-            RoomService.dismissRoom(repositorySet, roomNo);
+            dismissRoom(repositorySet, roomNo);
         }
         LargeScaleTaskService.completeTaskSegment(getClearRoomTaskServiceRepositorySet(repositorySet), segment.getId());
         return true;
