@@ -107,7 +107,7 @@ public class RoomCardService {
         StartRoomTaskSegmentIDGeneratorRepository startRoomTaskSegmentIDGeneratorRepository =
                 repositorySet.getStartRoomTaskSegmentIDGeneratorRepository();
         QipaiRoom room = RoomService.playerReady(repositorySet, roomNo, userId);
-        if (room.isAllPlayerReady()) {
+        if (room.isFull() && room.isAllPlayerReady()) {
             StartRoomTaskSegment startRoomTaskSegment = new StartRoomTaskSegment();
             startRoomTaskSegment.setId(startRoomTaskSegmentIDGeneratorRepository.take().generateId());
             startRoomTaskSegment.setRoomNo(roomNo);
@@ -231,7 +231,7 @@ public class RoomCardService {
         RoomState roomState = roomStateRepository.take(roomNo);
         if (roomState.is(RoomStateEnum.initial)) {
             room = qipaiRoomRepository.take(roomNo);
-            if (room.isAllPlayerReady()) {
+            if (room.isFull() && room.isAllPlayerReady()) {
                 roomState.setState(RoomStateEnum.starting);
             }
         }
