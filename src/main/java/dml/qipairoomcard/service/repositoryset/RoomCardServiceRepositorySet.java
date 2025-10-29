@@ -20,4 +20,8 @@ public interface RoomCardServiceRepositorySet extends GameCurrencyAccountingServ
     StartRoomTaskSegmentIDGeneratorRepository getStartRoomTaskSegmentIDGeneratorRepository();
 
     RoomStateRepository getRoomStateRepository();
+
+    StartRoomTaskSegmentTimeoutStrategyRepository getStartRoomTaskSegmentTimeoutStrategyRepository();
+
+    ClearRoomTaskSegmentTimeoutStrategyRepository getClearRoomTaskSegmentTimeoutStrategyRepository();
 }

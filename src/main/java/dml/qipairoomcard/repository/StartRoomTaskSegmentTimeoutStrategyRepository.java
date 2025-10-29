@@ -1,0 +1,7 @@
+package dml.qipairoomcard.repository;
+
+import dml.largescaletaskmanagement.entity.CompleteSegmentIfTimeout;
+import dml.largescaletaskmanagement.repository.SegmentProcessingTimeoutHandlingStrategyRepository;
+
+public interface StartRoomTaskSegmentTimeoutStrategyRepository extends SegmentProcessingTimeoutHandlingStrategyRepository<CompleteSegmentIfTimeout> {
+}

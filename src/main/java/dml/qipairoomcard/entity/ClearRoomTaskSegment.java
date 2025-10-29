@@ -6,7 +6,6 @@ public class ClearRoomTaskSegment extends LargeScaleTaskSegmentBase {
     private long id;
     private String roomNo;
 
-    @Override
     public void setId(Object id) {
         this.id = (long) id;
     }

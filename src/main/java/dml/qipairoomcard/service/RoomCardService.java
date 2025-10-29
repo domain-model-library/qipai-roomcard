@@ -8,6 +8,7 @@ import dml.keepalive.service.KeepAliveService;
 import dml.keepalive.service.repositoryset.AliveKeeperServiceRepositorySet;
 import dml.largescaletaskmanagement.repository.LargeScaleTaskRepository;
 import dml.largescaletaskmanagement.repository.LargeScaleTaskSegmentRepository;
+import dml.largescaletaskmanagement.repository.SegmentProcessingTimeoutHandlingStrategyRepository;
 import dml.largescaletaskmanagement.service.LargeScaleTaskService;
 import dml.largescaletaskmanagement.service.repositoryset.LargeScaleTaskServiceRepositorySet;
 import dml.largescaletaskmanagement.service.result.TakeTaskSegmentToExecuteResult;
@@ -128,6 +129,11 @@ public class RoomCardService {
             public LargeScaleTaskSegmentRepository getLargeScaleTaskSegmentRepository() {
                 return repositorySet.getStartRoomTaskSegmentRepository();
             }
+
+            @Override
+            public SegmentProcessingTimeoutHandlingStrategyRepository getSegmentProcessingTimeoutHandlingStrategyRepository() {
+                return repositorySet.getStartRoomTaskSegmentTimeoutStrategyRepository();
+            }
         };
     }
 
@@ -172,6 +178,11 @@ public class RoomCardService {
             @Override
             public LargeScaleTaskSegmentRepository getLargeScaleTaskSegmentRepository() {
                 return repositorySet.getClearRoomTaskSegmentRepository();
+            }
+
+            @Override
+            public SegmentProcessingTimeoutHandlingStrategyRepository getSegmentProcessingTimeoutHandlingStrategyRepository() {
+                return repositorySet.getClearRoomTaskSegmentTimeoutStrategyRepository();
             }
         };
     }

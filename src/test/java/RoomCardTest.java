@@ -7,6 +7,7 @@ import dml.gamecurrency.repository.GameUserCurrencyAccountsRepository;
 import dml.gamecurrency.service.GameCurrencyAccountingService;
 import dml.gamecurrency.service.repositoryset.GameCurrencyAccountingServiceRepositorySet;
 import dml.id.entity.LongIdGenerator;
+import dml.largescaletaskmanagement.entity.CompleteSegmentIfTimeout;
 import dml.qipairoom.entity.QipaiRoom;
 import dml.qipairoom.entity.RandomNoZeroIntegerStringRoomNoGenerator;
 import dml.qipairoom.repository.PlayerRoomJoinRepository;
@@ -151,6 +152,10 @@ public class RoomCardTest {
     StartRoomTaskSegmentIDGeneratorRepository startRoomTaskSegmentIDGeneratorRepository =
             TestCommonSingletonRepository.instance(StartRoomTaskSegmentIDGeneratorRepository.class, new LongIdGenerator(1));
     RoomStateRepository roomStateRepository = TestCommonRepository.instance(RoomStateRepository.class);
+    StartRoomTaskSegmentTimeoutStrategyRepository startRoomTaskSegmentTimeoutStrategyRepository =
+            TestCommonSingletonRepository.instance(StartRoomTaskSegmentTimeoutStrategyRepository.class, new CompleteSegmentIfTimeout());
+    ClearRoomTaskSegmentTimeoutStrategyRepository clearRoomTaskSegmentTimeoutStrategyRepository =
+            TestCommonSingletonRepository.instance(ClearRoomTaskSegmentTimeoutStrategyRepository.class, new CompleteSegmentIfTimeout());
 
 
     GameCurrencyAccountingServiceRepositorySet gameCurrencyAccountingServiceRepositorySet = new GameCurrencyAccountingServiceRepositorySet() {
@@ -216,6 +221,16 @@ public class RoomCardTest {
         @Override
         public RoomStateRepository getRoomStateRepository() {
             return roomStateRepository;
+        }
+
+        @Override
+        public StartRoomTaskSegmentTimeoutStrategyRepository getStartRoomTaskSegmentTimeoutStrategyRepository() {
+            return startRoomTaskSegmentTimeoutStrategyRepository;
+        }
+
+        @Override
+        public ClearRoomTaskSegmentTimeoutStrategyRepository getClearRoomTaskSegmentTimeoutStrategyRepository() {
+            return clearRoomTaskSegmentTimeoutStrategyRepository;
         }
 
         @Override
